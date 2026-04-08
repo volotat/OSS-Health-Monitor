@@ -6,16 +6,16 @@ A simple, dynamic, serverless badge that shows the open-source health status of 
 
 You can embed the badge into any `README.md` file using standard Markdown syntax.
 
-**Examples:**
-To show the health status for repository like `ffmpeg/ffmpeg` place the markdown images on the same line:
+**Example:**
+To show the badge for your repo, simply replace the `owner/repo` paths with your own GitHub username and repository name. For example, for `ffmpeg/ffmpeg`:
 
 ```markdown
-[![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg)](https://github.com/volotat/OSS-Health-Monitor) 
+[![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg)](https://github.com/volotat/OSS-Health-Monitor)
 ```
 
 **Output:**
 
-[![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg)](https://github.com/volotat/OSS-Health-Monitor) 
+[![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg)](https://github.com/volotat/OSS-Health-Monitor)
 
 ## How to Deploy Your Own Instance (100% Free)
 
