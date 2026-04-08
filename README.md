@@ -10,12 +10,12 @@ You can embed the badge into any `README.md` file using standard Markdown syntax
 To show the health status for repository like `ffmpeg/ffmpeg` place the markdown images on the same line:
 
 ```markdown
-![FFmpeg Health](https://osshealthmonitor.vercel.app/api/badge/ffmpeg/ffmpeg)
+![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg)
 ```
 
 **Output:**
 
-![FFmpeg Health](https://osshealthmonitor.vercel.app/api/badge/ffmpeg/ffmpeg)
+![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg)
 
 ## How to Deploy Your Own Instance (100% Free)
 
