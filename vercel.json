@@ -1,0 +1,19 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/badge/:owner/:repo",
+      "destination": "/api/index"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}

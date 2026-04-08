@@ -1,0 +1,17 @@
+{
+  "name": "github-health-monitor-badge",
+  "version": "1.0.0",
+  "description": "Dynamic GitHub OSS Health Monitor Badge",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "keywords": [
+    "github",
+    "badge",
+    "health",
+    "oss",
+    "monitor"
+  ],
+  "author": "volotat",
+  "license": "MIT"
+}
