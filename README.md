@@ -15,7 +15,7 @@ To show the badge for your repo, simply replace the `owner/repo` paths with your
 
 **Output:**
 
-[![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg)](https://github.com/volotat/OSS-Health-Monitor)
+[![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg?v=2)](https://github.com/volotat/OSS-Health-Monitor)
 
 ## How to Deploy Your Own Instance (100% Free)
 
