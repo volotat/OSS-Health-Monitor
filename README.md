@@ -19,7 +19,7 @@ To show the badge for your repo, simply replace the `owner/repo` paths with your
 
 ## How to Deploy Your Own Instance (100% Free)
 
-This service uses **Vercel Serverless Functions**. It is completely free to host and uses Vercel's global CDN caching to prevent hitting GitHub API rate limits.
+Might be useful if you want to create your own modified version of the badge. The service uses **Vercel Serverless Functions**. It is completely free to host and uses Vercel's global CDN caching to prevent hitting GitHub API rate limits.
 
 1. **Fork or clone** this repository to your GitHub account.
 2. Go to [Vercel](https://vercel.com/) and click **Add New Project**.
