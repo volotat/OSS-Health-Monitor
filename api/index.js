@@ -17,11 +17,26 @@ function formatAge(ms) {
 }
 
 function formatPace(days) {
-  if (days >= 1) return `${days.toFixed(1)} days`;
+  if (days >= 1) return `${days.toFixed(1)}d`;
   const hours = days * 24;
-  if (hours >= 1) return `${hours.toFixed(1)} hrs`;
+  if (hours >= 1) return `${hours.toFixed(1)}h`;
   const mins = hours * 60;
-  return `${mins.toFixed(0)} mins`;
+  return `${mins.toFixed(0)}m`;
+}
+
+function formatTimeAgo(ms) {
+  if (ms < 0) ms = 0;
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  if (days === 0) {
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    if (hours === 0) return "now";
+    return `${hours}h ago`;
+  }
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30.44);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(days / 365.25);
+  return `${years}y ago`;
 }
 
 function shortenNumber(num) {
@@ -38,33 +53,35 @@ function getHealthColor(paceDays, ageDays) {
   return "#f85149"; // stale
 }
 
-function generateSvg({ repoName, ageStr, commits, paceStr, error }) {
+function generateSvg({ repoName, ageStr, commits, paceStr, lastCommitAgoStr, error }) {
   if (error) {
-    return `<svg width="140" height="115" viewBox="0 0 140 115" xmlns="http://www.w3.org/2000/svg">
-      <rect width="140" height="115" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
-      <text x="70" y="55" fill="#f85149" font-family="sans-serif" font-size="12" text-anchor="middle">Error</text>
-      <text x="70" y="75" fill="#8b949e" font-family="sans-serif" font-size="10" text-anchor="middle">${error}</text>
+    return `<svg width="150" height="24" viewBox="0 0 150 24" xmlns="http://www.w3.org/2000/svg">
+      <rect width="150" height="24" rx="4" fill="#0d1117" stroke="#f85149" stroke-width="1"/>
+      <text x="75" y="16" fill="#f85149" font-family="sans-serif" font-size="11" text-anchor="middle">Error: ${error}</text>
     </svg>`;
   }
 
-  return `<svg width="140" height="115" viewBox="0 0 140 115" xmlns="http://www.w3.org/2000/svg">
-    <rect width="140" height="115" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+  return `<svg width="435" height="24" viewBox="0 0 435 24" xmlns="http://www.w3.org/2000/svg">
+    <rect width="435" height="24" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
     
-    <!-- Header -->
-    <text x="70" y="24" fill="#c9d1d9" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">OSS Health</text>
-    <path d="M 15 35 L 125 35" stroke="#30363d" stroke-width="1"/>
+    <!-- OSS Health -->
+    <text x="40" y="16" fill="#c9d1d9" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">OSS Health</text>
+    <path d="M 80 0 L 80 24" stroke="#30363d" stroke-width="1"/>
     
-    <!-- Age Row -->
-    <text x="15" y="58" fill="#8b949e" font-family="sans-serif" font-size="11">Age</text>
-    <text x="125" y="58" fill="#c9d1d9" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="end">${ageStr}</text>
+    <!-- Age -->
+    <text x="120" y="16" fill="#8b949e" font-family="sans-serif" font-size="11" text-anchor="middle">Age <tspan fill="#c9d1d9" font-weight="bold">${ageStr}</tspan></text>
+    <path d="M 160 0 L 160 24" stroke="#30363d" stroke-width="1"/>
     
-    <!-- Commits Row -->
-    <text x="15" y="82" fill="#8b949e" font-family="sans-serif" font-size="11">Commits</text>
-    <text x="125" y="82" fill="#c9d1d9" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="end">${shortenNumber(commits)}</text>
+    <!-- Commits -->
+    <text x="207" y="16" fill="#8b949e" font-family="sans-serif" font-size="11" text-anchor="middle">Commits <tspan fill="#c9d1d9" font-weight="bold">${shortenNumber(commits)}</tspan></text>
+    <path d="M 255 0 L 255 24" stroke="#30363d" stroke-width="1"/>
     
-    <!-- Pace Row -->
-    <text x="15" y="106" fill="#8b949e" font-family="sans-serif" font-size="11">Avg Pace</text>
-    <text x="125" y="106" fill="#c9d1d9" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="end">${paceStr}</text>
+    <!-- Pace -->
+    <text x="300" y="16" fill="#8b949e" font-family="sans-serif" font-size="11" text-anchor="middle">Pace <tspan fill="#c9d1d9" font-weight="bold">${paceStr}</tspan></text>
+    <path d="M 345 0 L 345 24" stroke="#30363d" stroke-width="1"/>
+    
+    <!-- Last Commit -->
+    <text x="390" y="16" fill="#8b949e" font-family="sans-serif" font-size="11" text-anchor="middle">Last <tspan fill="#c9d1d9" font-weight="bold">${lastCommitAgoStr}</tspan></text>
   </svg>`;
 }
 
@@ -102,13 +119,19 @@ module.exports = async function handler(req, res) {
     // 2. Fetch Commits
     const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`, { headers });
     let commits = 0;
+    let lastCommitDate = null;
     
     if (commitsRes.ok) {
       const linkHeader = commitsRes.headers.get('link');
+      const body = await commitsRes.json();
+      
+      if (body.length > 0 && body[0].commit && body[0].commit.committer) {
+        lastCommitDate = new Date(body[0].commit.committer.date);
+      }
+      
       if (linkHeader) {
         commits = extractCommitCount(linkHeader);
       } else {
-        const body = await commitsRes.json();
         commits = body.length || 0;
       }
     } else if (commitsRes.status === 409) {
@@ -121,17 +144,28 @@ module.exports = async function handler(req, res) {
     // 3. Calculate Stats
     const now = new Date();
     const ageMs = now.getTime() - createdAt.getTime();
-    const ageDays = ageMs / (1000 * 60 * 60 * 24);
-    
     const ageStr = formatAge(ageMs);
-    const paceDays = commits > 0 ? ageDays / commits : 0;
+
+    let paceDays = 0;
+    let lastCommitAgoStr = "N/A";
+
+    if (commits > 0 && lastCommitDate) {
+      const devTimeMs = lastCommitDate.getTime() - createdAt.getTime();
+      const devTimeDays = Math.max(0, devTimeMs / (1000 * 60 * 60 * 24));
+      paceDays = commits > 1 ? devTimeDays / (commits - 1) : devTimeDays;
+      
+      const lastCommitMs = now.getTime() - lastCommitDate.getTime();
+      lastCommitAgoStr = formatTimeAgo(lastCommitMs);
+    }
+    
     const paceStr = commits > 0 ? formatPace(paceDays) : "N/A";
 
     const svgString = generateSvg({
       repoName: repoData.name,
       ageStr,
       commits,
-      paceStr
+      paceStr,
+      lastCommitAgoStr
     });
 
     res.status(200).send(svgString);
