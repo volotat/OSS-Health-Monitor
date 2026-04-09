@@ -17,7 +17,7 @@ To show the badge for your repo, simply replace the `owner/repo` paths with your
 
 [![FFmpeg Health](https://oss-health-monitor.vercel.app/api/badge/ffmpeg/ffmpeg?v=2)](https://github.com/volotat/OSS-Health-Monitor)
 
-## How to Deploy Your Own Instance (100% Free)
+## How to Deploy Your Own Instance
 
 Might be useful if you want to create your own modified version of the badge. The service uses **Vercel Serverless Functions**. It is completely free to host and uses Vercel's global CDN caching to prevent hitting GitHub API rate limits.
 
