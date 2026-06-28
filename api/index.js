@@ -115,30 +115,76 @@ module.exports = async function handler(req, res) {
     }
     const repoData = await repoRes.json();
     const createdAt = new Date(repoData.created_at);
-    
-    // 2. Fetch Commits
-    const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`, { headers });
+
+    // 2. Fetch Commits across all branches.
+    // GitHub's /commits endpoint defaults to the default branch only, so a repo
+    // whose default branch is stale but has active feature branches would look
+    // dead. We list every branch and query each branch tip: the response gives
+    // both that branch's last-commit date (body) and its commit count (Link
+    // header). We then take the latest date across branches, and the largest
+    // single-branch count as the best feasible proxy for the union (a true
+    // deduplicated cross-branch count isn't available cheaply via REST).
     let commits = 0;
     let lastCommitDate = null;
-    
-    if (commitsRes.ok) {
-      const linkHeader = commitsRes.headers.get('link');
-      const body = await commitsRes.json();
-      
+
+    // Fetch a single branch's tip stats: { count, date }.
+    const fetchBranchStats = async (branchName) => {
+      const ref = encodeURIComponent(branchName);
+      const branchRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/commits?sha=${ref}&per_page=1`,
+        { headers }
+      );
+      if (!branchRes.ok) return null;
+
+      const linkHeader = branchRes.headers.get('link');
+      const body = await branchRes.json();
+      if (!Array.isArray(body)) return null;
+
+      let date = null;
       if (body.length > 0 && body[0].commit && body[0].commit.committer) {
-        lastCommitDate = new Date(body[0].commit.committer.date);
+        date = new Date(body[0].commit.committer.date);
       }
-      
-      if (linkHeader) {
-        commits = extractCommitCount(linkHeader);
+      const count = linkHeader ? extractCommitCount(linkHeader) : (body.length || 0);
+      return { count, date };
+    };
+
+    // List branches (first page, up to 100 — enough for the vast majority of repos).
+    const branchesRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`,
+      { headers }
+    );
+
+    if (branchesRes.ok) {
+      const branches = await branchesRes.json();
+      if (Array.isArray(branches) && branches.length > 0) {
+        const stats = (await Promise.all(branches.map((b) => fetchBranchStats(b.name)))).filter(Boolean);
+        for (const s of stats) {
+          if (s.count > commits) commits = s.count;
+          if (s.date && (!lastCommitDate || s.date.getTime() > lastCommitDate.getTime())) {
+            lastCommitDate = s.date;
+          }
+        }
+      }
+    }
+
+    // Fallback: if the branches listing failed or yielded nothing usable
+    // (e.g. empty repo, or rate-limited mid-fan-out), fall back to the
+    // default-branch commit query.
+    if (commits === 0 && !lastCommitDate) {
+      const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`, { headers });
+      if (commitsRes.ok) {
+        const linkHeader = commitsRes.headers.get('link');
+        const body = await commitsRes.json();
+        if (body.length > 0 && body[0].commit && body[0].commit.committer) {
+          lastCommitDate = new Date(body[0].commit.committer.date);
+        }
+        commits = linkHeader ? extractCommitCount(linkHeader) : (body.length || 0);
+      } else if (commitsRes.status === 409) {
+        // Empty repo
+        commits = 0;
       } else {
-        commits = body.length || 0;
+        return res.status(commitsRes.status).send(generateSvg({ error: "Commits fetch failed" }));
       }
-    } else if (commitsRes.status === 409) {
-      // Empty repo
-      commits = 0;
-    } else {
-      return res.status(commitsRes.status).send(generateSvg({ error: "Commits fetch failed" }));
     }
 
     // 3. Calculate Stats
